@@ -29,7 +29,7 @@ scala是一门以java虚拟机（jvm）为运行环境并将面向对象和函�
 
 1. scala需要java运行环境，所以安装scala首先需要安装jdk（推荐使用1.8）
 
-2. 根据自身学习环境或者工作环境版本下载 [**scala**](https://www.scala-lang.org) 安装包并安装（注意安装路径不要有空格、中文）
+2. 根据自身学习环境或者工作环境版本下载 [**scala**](https://www.scala-lang.org/download/) 安装包并安装（注意安装路径不要有空格、中文）
 3. 配置java环境变量（**JAVA_HOME**）
 4. 配置 **SCALA_HOME** 环境变量
 5. 配置java和scala的系统环境变量（**path**）
