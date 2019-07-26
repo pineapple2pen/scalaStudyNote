@@ -37,15 +37,15 @@ class CalWays {
 ```
 
 ```
-			类方法		  
+          类方法		  
           /
-		oop
-		/
+        oop
+       /
 一段代码
-		\
-	  函数式编程
-	      \
-	      	函数
+       \
+     函数式编程
+         \
+         函数
 ```
 
 所以函数和方法的本质是一样的。
@@ -193,7 +193,184 @@ object Test {
 7. 如果明确函数无返回值或者不确定返回值类型，那么返回值类型可以省略（或者声明为Any）
 8. Scala语法中任何的语法结构都可以嵌套在其他语法结构，即函数中可以再声明/定义函数，类中可以再声明类，方法中可以再声明/定义方法
 9. Scala函数的形参，在声明参数的时，直接赋初始值（默认值），这时调用函数时，如果没有指定实参，则会使用默认值。如果指定了实参，则实参会覆盖默认值。
+```scala
+    def test(num: Int = 5): Int = {
+      num
+    }
+```
+10. 如何函数存在多个参数，每一个参数都可以设定默认值，那么这个时候，传递的参数到底是覆盖默认值还是赋值给没有默认值的参数，就不确定了（默认按照声明顺序[从左到右]）。在这样的情况下，可以采用带命参数。
+```scala
+    def main(args: Array[String]): Unit = {
+        mysqlCon(use = "app", pwd = "app")
+    }
+    def mysqlCon(address:String = "localhost", port:Int = 3306, use:String = "root", pwd: String: = "123456"): Unit = {
+      println(address + ":" + port)
+      print(uae + "@" + pwd)
+    } 
+```
+11. Scala函数的形参默认是val的,因此不能在函数中进行修改。
+
+12. 递归函数在没有执行之前是无法推断出结果类型，在使用时必须有明确的返回值类型
+```scala
+  // 返回值类型必须声明
+  def test(num: Int): Int={
+      if (num > 2){
+          test(num - 1)
+      }
+      num
+  }
+```
+
+13. Scala支持可变参数,同时可变参数只能写在形参列表的最后。
+```scala
+  // nums的类型实际是一个序列 Seq[Int]
+  def sum(nums: Int*): Int={
+    var s = 0
+    //使用for循环遍历
+    for(i <- nums){
+        s += i
+    }
+    s
+  }
+  // sum(1, 2, 3, 4, 55)
+```
+
+###### 练习
+
+判断下面的代码执行结果
+
+```scala
+object Test {
+    def main(args: Array[String]): Unit = {
+        def f = "123456"
+        print(f)
+    }
+}
+/*
+f函数实际上等价于
+def f() = {
+  "123456"
+}
+在没有形参时，可以省略（）
+*/
+```
 
 ---
 
-#### 惰性函数和异常
+#### 过程
+
+将函数的返回类型设置为Unit的函数称之为**过程**， 如果明确函数没有返回值，那么等号可以省略。
+
+```scala
+def f(name: String): Unit = {
+    print(name)
+}
+```
+
+###### 注意事项
+
+1. 如果函数声明的时候没有返回值类型，但是有`=`号, 可以进行类型推断最后一行代码。这时这个函数实际上是有返回值的，该函数并不是过程
+2. 开发工具一般会默认加上Unit返回值，建议不加，以保持简洁。
+
+---
+
+#### 惰性函数
+
+惰性计算（尽可能延迟表达式求值）是许多函数式编程语言的特性。惰性结合在需要时提供其原始，无须预先计算他们，这带来一些好处。首先，你可以将耗时的计算推迟到绝对需要的时候。其次，可以创建无限个集合，只要它们继续收到请求，就为其提供元素。函数的惰性使用让你能够得到更加高效的代码，Java并没有为惰性提供原生支持，Scala提供了。
+
+![image.png](https://upload-images.jianshu.io/upload_images/6623925-f1b85ed9e0136c4e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+###### 介绍
+
+​	当函数返回值被声明为lazy时，函数的执行将被推迟，直到我们首次对此取值，该函数才会执行。这样的函数称之为惰性函数，在Java的某些框架代码中称之为懒加载（延迟加载）
+
+```scala
+def main(args:Array[String]): Unit = {
+    lazy val res = sum(10, 30)
+    println("------")
+    println(res) // 要使用res前才开始执行。
+}
+def sum(n1: Int, n2:Int): Int = {
+    print("run sum...")
+    return n1 + n2
+}
+```
+
+###### 注意细节
+
+1. `lazy` 不能修饰var类型的变量
+2. 不但是在函数调用时加了`lazy`会导致函数的执行被推迟，我们在声明一个变量时，如果声明了`lazy`,那么变量值的分配也会推迟。比如`lazy val i = 10`
+
+---
+
+#### 异常
+
+Scala提供 *try* 和 *catch* 块来处理异常。try块用于包含可能出错的代码。catch块用于处理try中发生的异常。可以根据需要在程序中写上任意数量的try...catch块
+
+```scala
+try{
+    val = 10 / 0
+}catch{
+    // 在Scala中只有一个catch
+    // 在catch中有多个case，每个case可以匹配一种异常
+    // => 关键符号，表示后面是异常处理的代码块
+    case ex: ArithmeticException=>println("error 01")
+    case ex: Exception=>println("error 01")
+} finally{
+    // finally无论有没有异常都能执行。
+    println("finally run")
+}
+```
+
+###### 细节
+
+1. 我们将可疑代码封装在try..catch中，在try块之后可以使用一个catch处理程序来捕获异常。如果发生任何异常，catch处理程序将处理它，程序不会因为异常停止。
+2. Scala的异常的工作机制与java一样，但是Scala没有“checked（编译器）”异常，即Scala没有编译异常这个概念，异常都是在运行的时候捕获处理。
+3. 用throw关键字，抛出一个异常对象。所有的异常都是Throwable的子类型。throw表达式是有类型的，就是Nothing，因为Nothing是所有类型的子类型，所以throw表达式可以用在需要类型的地方
+```scala
+def main(args: Array[String]): Unit = {
+    val res = test()
+}
+def test(): Nothing={
+    throw new Exception("error")
+}
+```
+
+4. 在Scala里，借用了模式匹配的思想来做异常的匹配，因此，在catch的代码里，是一系列case子句来匹配异常，当匹配上后 =>有多条语句可以换行写
+5. 异常捕获的机制与其他语言一样，如果有异常发生，catch子句是按照次序捕捉的。所以在catch子句中，越具体的异常越靠前，越普遍的异常越靠后，所以在编码时建议将具体的异常放在前面。
+6. finally子句用于执行不管是正常处理还是异常发生时都需要执行的步骤（对象清理等）
+7. Scala提供了throws关键字来声明异常。可以使用方法定义声明异常。它向调用者函数提供了此方法可能引发该异常的信息。有助于调用函数处理并将该代码包含在try...catch块中，以避免程序异常终止。
+```scala
+object Test {
+  def main(args: Array[String]): Unit = {
+    sum(5, 10)
+  }
+
+  @throws(classOf[Exception])
+  def sum(n1: Int, n2: Int): Int = {
+    n1 + n2
+  }
+}
+```
+
+#### 练习
+
+函数编程99乘法表。
+
+```scala
+object FuncTest {
+  def main(args: Array[String]): Unit = {
+    multiplication(5)
+  }
+
+  def multiplication(num: Int) = {
+    for (i <- 1 to num) {
+      for (n <- 1 to i) {
+        printf("%d * %d = %d\t", i, n, i * n)
+      }
+      println()
+    }
+  }
+}
+```
+
