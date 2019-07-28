@@ -374,3 +374,26 @@ object FuncTest {
 }
 ```
 
+得到字符串字符的乘积
+
+```scala
+object TestDemo {
+  def main(args: Array[String]): Unit = {
+    print(stringCharCj("hi"))
+  }
+  def stringCharCj(c: String): Long={
+    var res = 1L
+    // foreach 表示对调用者的元素进行遍及执行括号中的函数
+    c.foreach(res *= _.toLong)
+    res
+  }
+  def stringCharCj2(c : String): Long={
+    // charAt 函数表示取字符串指定位置的字符
+    if (c.length == 1) return c.charAt(0).toLong
+    // take 函数表示取字符串的指定位置（从1开始）
+    // drop 函数表示字符串指定位置开始截断，并返回该字符(从1开始) "Hello".drop(2) // "llo"
+    else c.take(1).charAt(0).toLong * stringCharCj2(c.drop(1))
+  }
+}
+```
+
