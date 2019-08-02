@@ -727,3 +727,335 @@ abstract class An {
 6. 抽象方法和抽象属性不能使用private、final来修饰，因为这些关键字都是重写/实现相违背的
 7. 抽象类中可以有实现的方法
 8. 子类重写抽象方法不需要override，写上也不会报错
+
+##### 匿名子类
+
+通过包含带有定义或者重写的代码块的方式创建一个匿名的子类
+
+###### Java
+
+```java
+public class NonName {
+
+    public static void main(String[] args) {
+
+        NonClass nonName = new NonClass() {
+            @Override
+            public void test() {
+                System.out.println("test");
+            }
+        };
+        nonName.test();
+    }
+}
+
+abstract class NonClass {
+    abstract public void test();
+}
+```
+
+###### Scala匿名子类
+
+```scala
+package com.dongbo.scalastudy
+
+object NonClassScala {
+  def main(args: Array[String]): Unit = {
+    val noName: NonNameClass = new NonNameClass {
+
+      override val test: String = "55"
+
+      override def cry(): Unit = {
+        println("test")
+      }
+    }
+
+    noName.cry()
+  }
+}
+
+abstract class NonNameClass() {
+  val test: String
+
+  def cry()
+}
+```
+
+##### 继承层级
+
+1. 在scala中，所有类都是AnyRef的子类，类似Java的object
+2. AnyRef和AnyVal都扩展于Any类，Any类是根节点
+3. Any中定义了isInstanceOf、asInstanceOf方法以及哈希方法
+4. Null类型的唯一实例是null对象。可以将null值赋值给任意引用，但不能赋值给值类型的变量
+5. Nothing类型没有实例，它对于泛型结构是有用的（Nil空列表）
+
+#### 多态
+
+略
+
+---
+
+### 伴生对象
+
+​    当单例对象与某个类共享同一个名称时，它就被称为是这个类的伴生对象(companion object)。 
+这个类可以访问伴生对象的所有成员。
+
+​    在Java中，有静态对象这一概念，但是在Scala中，去掉了这一块的内容，但是为了兼容使用静态对象这一效果，引入了伴生对象这一概念。
+
+#### 伴生对象小结
+
+1. Scala中伴生对象采用object关键字声明，伴生对象中声明的全是静态的内容，可以使用对象名称直接调用
+2. 伴生对象对应的类型称为伴生类，伴生对象的名称应该和伴生类一致
+3. 伴生对象中的属性和方法都可以同归伴生对象（类名）直接调用
+4. 从语法角度来看，所谓的伴生对象就是类的静态方法和成员的集合
+5. 从技术角度来看，Scala还是没有生成静态的内容，只是将伴生对象生成了一个新的类实现属性和方法的调用
+6. 从底层原理看，伴生对象实现静态内容是依赖于public static final MODULE$实现的
+7. 伴生对象的声明应该和伴生类声明在同一个源码文件中（不在会报错）
+8. 如果`class A`独立存在，那么A就是一个类，如果`object A`独立存在，那么A就是一个“静态”性质的对象
+
+#### apply方法
+
+当创建一个对象时，可以直接通过apply方法来实例化对象，不用使用new关键字。所以apply方法可以用来当做工厂函数，也可以快速的去实现一个单例对象。
+
+###### 单例
+
+使用apply实现一个懒汉式单例模式
+
+```scala
+object SignDemo {
+  def main(args: Array[String]): Unit = {
+    val d = God
+    val d2 = God
+    println(d == d2)
+  }
+}
+
+class God private() {
+
+}
+
+object God {
+  var god: God = null
+
+  def apply(): God = {
+    if (god == null) {
+      god = new God()
+    }
+    god
+  }
+}
+```
+
+---
+
+### 特质
+
+Scala引入trait特征，第一可以替代Java的接口，第二也是对单继承的一种补充
+
+##### 说明
+
+1. Scala提供了trait特质，特质可以同时拥有抽象方法和具体方法，一个类可以实现/继承特质
+2. 特质中没有实现的方法就是抽象方法。类通过extends继承特质，通过with继承多个特质
+3. 所有的Java接口都可以当做特质使用
+
+#### 动态混入
+
+1. 除了可以在类声明时继承特质以外，还可以在构建对象时混入特质，扩展目标类的功能
+2. 这种方式也可以应用于抽象类功能进行扩展
+3. 动态混入是Scala特有的方式，可以在不修改类声明/定义的情况下。扩展类的功能，非常灵活，耦合性低
+4. 动态混入可以在不影响原有继承关系的基础上，给指定的类扩展功能
+
+```scala
+package com.dongbo.scalastudy
+
+object TraitMixDemo {
+  def main(args: Array[String]): Unit = {
+    // 在不修改类定义情况下，可以让他使用trait的方法
+    val oracleDb = new OracleDb with Operator
+    oracleDb.insert(5)
+
+    // 抽象类有抽象方法如何动态混入
+    val mysqlDb = new MysqlDb with Operator {
+      override def connect(): Unit = {
+        println("connect ...")
+      }
+    }
+    mysqlDb.insert(6)
+    mysqlDb.connect()
+  }
+}
+
+trait Operator {
+  def insert(id: Int): Unit = {
+    println("insert " + id)
+  }
+}
+
+class OracleDb {
+
+}
+
+abstract class MysqlDb {
+  def connect()
+}
+```
+
+##### 叠加特质
+
+构建对象的时候混入多个特质，称为叠加特质。（特质声明顺序是从左到右，方法执行顺序是从右到左）
+
+```scala
+package com.dongbo.scalastudy
+
+
+object TraitMixDemo {
+  def main(args: Array[String]): Unit = {
+
+    val e1 = new E with D
+    e1.a()
+    println("-------------------------------")
+    val e2 = new E with C with D
+    e2.a()
+  }
+}
+
+trait A {
+  def a()
+}
+
+trait B extends A {
+  println("build B")
+  override def a(): Unit = {
+    println("B override A a() method")
+  }
+}
+
+trait C extends B {
+  println("build C")
+  override def a(): Unit = {
+    println("C override B a() method")
+  }
+}
+
+trait D extends B {
+  println("build D")
+  override def a(): Unit = {
+    println("D override B a() method, and run B a()")
+    super.a()
+  }
+}
+
+class E {
+
+}
+
+```
+
+上面代码的运行结果
+
+```shell
+build B
+build D
+D override B a() method, and run B a()
+B override A a() method
+-------------------------------
+build B
+build C
+build D
+D override B a() method, and run B a()
+C override B a() method
+```
+
+从代码的运行结果可以看出，当我们混入多个特质的时候，会以从左到右的顺序来混入特质。再执行方法时，会从右到左的方法优先级来执行。当执行到super的时候，是指的左边的特质，如果左边没有特质了，则才会去执行自身父特质的super方法。同时，这个对象也不再是实例化的对象，而是特质混入的一个新的对象类型。
+
+###### 细节
+
+1. 特质声明顺序为从左到右
+2. Scala在执行叠加对象的方法时，会首先从后面的特质（从右到左）开始执行
+3. Scala中特质中如果调用可super，并不是表示调用的父特质的方法，而是向前面（左边）继续查找特质，如果找不到，才会去父特质查找。
+4. 如果想要调用具体特质的方法，可以指定`super[特质].xxx`其中的泛型必须是该特质的直接超类类型
+
+```scala
+//修改上面的代码之后，查看执行结果
+trait D extends B {
+  println("build D")
+  override def a(): Unit = {
+    println("D override B a() method, and run B a()")
+    super[B].a()
+  }
+}
+```
+
+##### 在特质中重写抽象方法的一个特例
+
+```scala
+trait A {
+  def a()
+}
+
+trait F extends A{
+  /*
+  * 1. 如果我们在子特质中重写/实现了一个父特质的抽象方法，但是同时调用了super
+  * 2. 这个时候这个方法并不是完全实现，因此需要声明为 abstract override
+  * 3. 但是在执行时，会很久动态混入的特性，不会调用父类的方法，而是左边的方法
+  * 因此在使用时需要考虑动态混入的顺序。
+  * */
+  abstract override def a(): Unit = {
+    println("F override A a()")
+    super.a()
+  }
+}
+```
+
+---
+
+### 练习
+
+1. 定义一个Point类和一个伴生对象，可以不用new而直接用Point(3,4)来构造实例。
+
+```scala
+class Point(var x: Double, var y: Double) {
+}
+
+object Point {
+  def apply( x1: Double = 0.0, y1: Double = 0.0): Point = new Point(x1, y1)
+}
+```
+
+2. 编写一个Scala应用程序，使用APP特质，以反序打印命令参数，用空格隔开。
+
+```scala
+object NonClassScala extends App{
+    println(args.reverse.mkString(" "))
+// 不继承App的普通伴生对象使用参数方法
+//  def main(args: Array[String]): Unit = {
+//    println(args.reverse.mkString(" "))
+//  }
+}
+```
+
+3. 编写一个扑克牌4花色枚举，起toString方法分别返回四种花色。实现一个方法，判断是否为红色。
+
+```scala
+object Test{
+  def main(args: Array[String]): Unit = {
+    println(Suits)
+    println(Suits.isRed(Suits.Diamond))
+  }
+}
+
+object Suits extends Enumeration{
+  // type 可以用于给类型起别名
+  type Suits = Value
+  val Spade = Value("♠")
+  val Club = Value("♣")
+  val Heart = Value("♥")
+  val Diamond = Value("♦")
+
+  override def toString(): String = {
+    Suits.values.mkString(",")
+  }
+  def isRed(c:Suits) = c == Heart || c == Diamond
+}
+```
+
