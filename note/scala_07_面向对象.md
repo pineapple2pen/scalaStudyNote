@@ -1007,6 +1007,335 @@ trait F extends A{
 }
 ```
 
+可以这样理解，当我们给某个方法增加了abstract override后，就是明确的告诉编译器，该方法确实是重写了父特质的抽象方法，但是重写之后，该方法任然是一个抽象方法（因为没有完全的实现，需要其他特质来继续实现[通过混入顺序来控制]）
+
+#### 富接口
+
+当特质中既有抽象方法又有非抽象方法的时候，这个特质就叫富接口
+
+#### 特质中的具体字段
+
+特质中可以定义具体的字段，如果初始化了就是具体字段，如果不初始化就是抽象字段。混入该特质的类就具有了该字段，字段不是继承，而是直接加入类，成为了自己的字段。
+
+#### 特质中的抽象字段
+
+特质中未被初始化的字段在具体的子类中必须被重写
+
+#### 特质构造的顺序
+
+特质也是有构造器的，构造器中的内容由“字段的初始化”和一些其他语句构成。
+
+第一种特质构造顺序（声明类的时候混入特质）
+
+1. 调用当前类的超类构造器
+2. 第一个特质的父特质构造器
+3. 第一个特质构造器
+4. 第二个特质构造器的父特质构造器，如果已经执行过就不再执行
+5. 第二个特质构造器
+6. 重复4）5）步骤（如有多个特质）
+7. 当前类的构造器
+
+例子：
+
+```scala
+package com.dongbo.scalaStudy.traitpkg
+/*
+* C
+* A
+* B
+* D
+* */
+object TraitDemo {
+  def main(args: Array[String]): Unit = {
+    val d = new D
+    println(d)
+  }
+}
+
+trait A {
+  println("A")
+}
+
+trait B extends A {
+  println("B")
+}
+
+class C {
+  println("C")
+}
+
+class D extends C with B {
+  println("D")
+}
+
+```
+
+
+
+第二种特质构造顺序（在构建对象时，动态混入特质）
+
+1. 调用当前类的超类构造器
+2. 当前类的构造器
+3. 从左到右特质由父当当前按顺序执行
+
+例子：略
+
+所以第一种方式实际在构建类对象，在混入特质的时候，**该对象还没有创建**
+
+第二种则是构造了一个匿名子类，可以理解为**在混入特质的时候，对象已经创建了**
+
+#### 扩展类的特质
+
+特质可有继承类，用来扩展类的一些功能
+
+```scala
+// TestException继承了Exception方法，那么它就可以使用Exception的方法了
+trait TestException extends Exception{
+  def log(): Unit ={
+    println(getMessage())
+  }
+}
+```
+
+所有混入该特质的类，会自动成为那个特质所继承的超类
+
+```scala
+// 因为Test2Exception继承了TestException
+// 而TestException继承了Exception
+// 那么Test2Exception就是Exception的子类了
+class Test2Exception extends TestException{
+  override def getMessage: String = {
+    "test..."
+  }
+}
+```
+
+需要注意的是，已经继承了另一个类（A）,则要求A是特质超类的子类，否则就造成了多继承现象，编译报错
+
+```scala
+//IndexOutOfBoundsException为Exception的子类
+class Test3Exception extends IndexOutOfBoundsException with TestException{
+  override def getMessage: String = {
+    "getMessage"
+  }
+}
+```
+
+#### 自身类型
+
+主要是为了解决特质的循环依赖问题，同时可以确保特质在不扩展某个类的情况下，依然可以做到限制混入该特质的类的类型
+
+```scala
+// 这个就是自身类型特质，当这里做了自身类型之后
+// trait Test4Logger extends Exception,要求混入该特质的来也是Exception的子类
+trait Test4Logger{
+  // 明确告诉编译器，他就是Exception，如果没有这句话，下面的getMessage就无法使用
+  this : Exception =>
+  def log(): Unit = {
+    println(getMessage)
+  }
+}
+```
+
+---
+
+### 嵌套类
+
+在Scala中，可以在任何的语法结构中嵌套任何语法结构。如在类中可以再定义一个类，这样的类就是嵌套类，其他语法结构也是一样的
+
+嵌套类类似于Java中的内部类
+
+#### Java的内部类回顾
+
+##### 定义
+
+在Java中，一个类的内部又完整的嵌套了另一个完整的类结构。被嵌套的类称为内部类（inner class），嵌套的其他类称为外部类。内部类最大的特点就是可以直接访问私有属性，并且可以体现类与类之间的包含关系
+
+##### 语法
+
+```java
+class Outer { //外部类
+    class Inner {
+ 		//内部类       
+    }
+}
+class Other {
+    // 外部其他类
+}
+
+```
+
+##### 分类
+
+- 从定义在外部类的成员位置上来看
+  1. 成员内部类（没有使用static修饰）
+  2. 静态内部类（使用static修饰）
+- 定义在外部类局部位置上（方法内）来看：
+  1. 分为局部内部类（有类名）
+  2. 匿名内部类（匿名类，无类名）
+
+##### 代码示例
+
+```java
+package com.dongbo.innerclasstest;
+
+public class TestJavaClass {
+    public static void main(String[] args) {
+        // 创建一个外部类对象
+        OuterClass outerClass1 = new OuterClass();
+        // 创建一个外部类对象
+        OuterClass outerClass2 = new OuterClass();
+        // 创建成员内部类
+        // Java中，将成员内部类当成一个属性，因此使用下面方式创建内部类
+        OuterClass.InnerClass innerClass1 = outerClass1.new InnerClass();
+        OuterClass.InnerClass innerClass2 = outerClass2.new InnerClass();
+        // 下面的方法调用说明在Java中，内部类只和类型相关，也就是说只要是
+        // OuterClass.InnerClass类型的对象就可以传给形参 InnerClass
+        innerClass1.test(innerClass2);
+        innerClass2.test(innerClass1);
+
+        //创建静态内部类
+        // 因为在Java中静态内部类是和类相关的，使用 new OuterClass.StaticInnerClass();
+        OuterClass.StaticInnerClass staticInnerClass = new OuterClass.StaticInnerClass();
+
+    }
+}
+
+class OuterClass{ //外部类
+    class InnerClass{ // 成员内部类
+        public void test(InnerClass ic){
+            System.out.println("test: " + ic);
+        }
+    }
+
+    static class StaticInnerClass{// 静态内部类
+
+    }
+}
+```
+
+####  Scala内部类
+
+##### 语法
+
+```scala
+class OuterClass{ // 外部类
+  var name:String = "Scala"
+  class InnerClass{ // 内部类
+    
+  }
+}
+
+object OuterClass{ //伴生对象
+  class StaticInnerClass{ // 静态内部类
+    
+  }
+}
+```
+
+##### 代码示例
+
+```scala
+object InnerDemo {
+  def main(args: Array[String]): Unit = {
+    // 创建两个外部类的实例
+    val outerClass1: OuterClass = new OuterClass
+    val outerClass2: OuterClass = new OuterClass
+    // 创建内部类
+    // 创建内部类语法是 对象.内部类来创建的
+    // 内部类实例和外部对象是有关联的
+    val innerClass1 = new outerClass1.InnerClass
+    val innerClass2 = new outerClass2.InnerClass
+    
+    // Scala创建静态内部类与Java 一样
+    val staticInnerClass = new OuterClass.StaticInnerClass
+  }
+}
+```
+
+##### 使用
+
+内部类如果想要访问外部类的属性，可以通过外部类对象访问(`外部类名.this.属性名`)
+
+```scala
+class OuterClass{
+  var name:String = "Scala"
+  class InnerClass{
+    def info(): Unit ={
+      println("Outer class name is " + OuterClass.this.name)
+    }
+  }
+}
+```
+
+还有一种访问方式`外部类别名.属性名`
+
+```scala
+class OuterClass{
+  myOuter => // 这样写可以理解成为 myOuter就是代表外部类别名的访问
+  // 当给外部类指定别名的时候，需要将外部类的属性放在别名后面
+  var name:String = "Scala"
+  class InnerClass{
+    def info(): Unit ={
+      println(name)
+      println(myOuter.name)
+
+    }
+  }
+}
+```
+
+#### 类型投影
+
+看下面这段代码
+
+```scala
+class OuterClassScala{
+  myOuter=>
+  class InnerClassScala{
+    def test(ic: InnerClassScala): Unit ={
+      System.out.println(ic)
+    }
+  }
+}
+
+object Test{
+  def main(args: Array[String]): Unit = { 
+    val staticInnerClass = new OuterClass.StaticInnerClass
+    val o1 = new OuterClassScala
+    val i1 = new o1.InnerClassScala
+    // 正常
+    i1.test(i1)
+    val o2 = new OuterClassScala
+    val i2 = new o2.InnerClassScala
+    //正常
+    i2.test(i2)
+    // 报错
+    // i2.test(i1)
+  }
+}
+```
+
+若希望上面报错地方正常，需要使用类型投影
+
+```scala
+class OuterClassScala{
+  myOuter=>
+  class InnerClassScala{
+    // 使用 OuterClassScala#InnerClassScala 类型投影的作用就是屏蔽外部对象对内部对象的影响
+    def test(ic: OuterClassScala#InnerClassScala): Unit ={
+      System.out.println(ic)
+    }
+  }
+}
+```
+
+##### 原因
+
+​    Java中的内部类是属于外部类，因此在Java中方法调用自身对象就可以，因为是按照类型来匹配的。而Scala中内部类属于外部类的对象，所以外部类的对象不一样，创建出来的内部类也不一样，无法互换使用
+
+  所以采用类型投影，Scala类型投影就是在方法声明上，如果使用 `外部类#内部类`的方式，表示忽略内部类的对象关系，等同于Java中内部类的操作语法。（即忽略对象的创建方式，只考虑类型）
+
 ---
 
 ### 练习
