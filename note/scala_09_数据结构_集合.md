@@ -240,5 +240,235 @@ val list6 = 77 :: list3 ::: list4 ::: Nil
 
 ​    ListBuffer是可变的List集合，可以添加删除元素。ListBuffer属于序列（Seq）
 
+```scala
+object SetDemo {
+  def main(args: Array[String]): Unit = {
+    // 引包
+    import scala.collection.mutable.ListBuffer
+    // 创建
+    val listBuffer = ListBuffer[Any](56, 55, "444", "444")
+    // 访问
+    println(listBuffer(0))
+    // 遍历
+    for(i <- listBuffer){
+      println(i)
+    }
+    // 修改
+    listBuffer(1) = 999
+    println(listBuffer(1))
+    // 增加
+    // 运算符增删初始(增加元素会返回一个新列表)
+    listBuffer += "454"   //末尾增加
+    listBuffer :+ 5599
+    println(listBuffer)
+    // 增加多个元素
+    listBuffer.append("555", "test", true)
+    // 集合合并使用 ++=（当前集合自+ l1 ++= l2）
+    val listBuffer2 = ListBuffer[Any]("test1", 66)
+    listBuffer ++= listBuffer2
+    println(listBuffer)
+    // ++ 为集合加法，返回一个新集合
+    val listBuffer3 = listBuffer ++ listBuffer2
+    println(listBuffer3)
+    // :+ 为集合增加元素返回新集合的方法
+    val listBuffer4 = listBuffer3 :+ "test"
+    // 删除
+    // 运算符删除
+    listBuffer -= "444"   //删除指定数据(多个相同数据只删除最前面的数据)
+    // 下标删除
+    listBuffer.remove(2)
+  }
+}
+```
 
+---
+
+### 队列(Queue)
+
+#### 基本介绍
+
+##### 说明
+
+1. 队列是一个有序的队列，在底层可以用数组或者是链表来实现
+2. 其输出和输入要遵循先入先出的原则，即：先入队列的数据，要先取出，后存入的要后取出
+3. 在Scala中，设计者直接提供了队列
+4. 在Scala中，有`scala.collection.mutable.Queue`和`scala.collection.immutable.Queue`，一般在项目中使用可变集合的队列
+
+##### 使用示例
+
+```scala
+object SetDemo {
+  def main(args: Array[String]): Unit = {
+    // 引包
+    import scala.collection.mutable
+    // 初始化
+    val queue = new mutable.Queue[Any]
+    // 末尾增数据
+    queue += 1  // Queue(1)
+    queue.enqueue("2", 3)
+    // 增加集合数据（默认末尾按顺序增加）
+    queue ++= List("test", false) // Queue(1, 2, 3, test, false)
+    // 队列头部取数（取出后，取出数据会从队列移除）
+    val qData = queue.dequeue()  // Queue(2, 3, test, false)
+    // 返回队列的元素
+    println(queue.head) // 返回头部元素，不会删除数据
+    println(queue.last) // 返回尾部元素，不会删除数据
+    println(queue.tail) // 返回一个原队列除头部元素外所有元素的新队列，原队列不会改变
+  }
+}
+```
+
+---
+
+### 映射(Map)
+
+#### 基本介绍
+
+##### Java中Map回顾
+
+HashMap是一个散列表（数组 + 链表），它存储的是键值对（key - value）映射，Java中的HashMap是无序的。
+
+##### Scala-Map
+
+1. Scala中的Map和Java类似，也是一个散列表，它存储的内容也是键值对（key - value）映射。Scala中不可变的Map是有序的，可变的Map是无序的。
+2. Scala中有可变的Map(`scala.collection.mutable.Map`)和不可变Map(`scala.collection.immutable.Map`)
+
+###### 不可变Map代码示例
+
+```scala
+object MapDemo {
+  def main(args: Array[String]): Unit = {
+    // 不可变Map默认引包（scala包对象中定义）
+    // 构建Map中的kv的元素类型是Tuple2(反编译class文件中kv为该对象)
+    // kv的类型不做强制规定(Any)
+    val immutableMap = Map("name" -> "dongbo", "age" -> 26, "nation" -> "汉", 176 -> "联通")
+    // Map(name -> dongbo, age -> 26, nation -> 汉) 有序输出，与定义时顺序一样
+    println(immutableMap)
+  }
+}
+```
+
+###### 可变Map代码示例
+
+```scala
+object MapDemo {
+  def main(args: Array[String]): Unit = {
+    //引入包
+    import scala.collection.mutable
+    // 实例化，构建方式与不可变映射几乎相同
+    val map = mutable.Map("name" -> "dongbo", "age" -> 26, "nation" -> "汉", 176 -> "联通")
+    // 修改数据（存在则修改，不存在则插入）
+    map("name") = "dongbo1"
+    map("litter name") = "2 pen"
+    // Map(176 -> 联通, age -> 26, name -> dongbo1, litter name -> 2 pen, nation -> 汉)
+    // 与输入时顺序不同，所以可变Map是无序的
+    println(map)
+    // 删除数据
+    map.remove("litter name") // 存在则删除，不存在无影响
+   // 添加多个元素
+    map += ("test" -> '5', "test1" -> 66, )
+
+    // 直接查询数据 k存在则返回，不存在则抛异常（NoSuchElementException）
+    println(map("name"))
+    // 由于k不存在会抛出异常，所以在取之前使用contains方法判断k是否存在
+    val k = "name"
+    if (map.contains(k)) println(map(k))
+    // 使用map.get(k).get方式取值
+    println(map.get(k)) // Some(dongbo1) 返回一个Option对象
+    println(map.get(k).get) // dongbo1
+    println(map.get("k")) // 数据不存在返回 None(None.get 会报错NoSuchElementException)
+    // 使用getOrElse方法取值（k存在,返回v值, 不存在则存入k-default）
+    println(map.getOrElse(k, "default val")) //dongbo1
+    println(map.getOrElse("k", "default val")) // default val
+
+    // 创建空映射[Type, Type]为定义map中kv的类型
+    val nilMap = new mutable.HashMap[String, String]
+
+    // 对偶元组方式创建，和最上面的那种构建方式相同，只是形式不同
+    val dualMap = mutable.Map(("A", 1), ("B", 2), ("C", 3))
+    println(dualMap)
+  }
+}
+```
+
+###### 说明
+
+1. 如果确定map中有key，则使用map(key)
+2. 如果不确定map中是否有key则使用contains方法先判断，再来处理后续逻辑
+3. 具体根据业务场景使用方法，如获取ip，可使用`map.getOrElse("ip", "127.0.0.1")`
+
+###### Map的遍历
+
+```scala
+    for ((k, v) <- map) printf("%s - %s \n", k, v) //176 - 联通
+    for (v <- map.values) println(v) // value遍历
+    for (k <- map.keys) println(k)  // key遍历
+    for (kv <- map) println(kv)   // (176,联通) Tuple2对象
+```
+
+---
+
+### 集合(Set)
+
+#### 基本介绍
+
+集合就是不重复元素的结合。集合没有顺序，默认是以哈希集实现
+
+##### Java中Set回顾
+
+​    Java中，常用的HashSet是实现Set接口的一个实体类，数据是以哈希表的形式存放的，里面不能包含重复的数据。Set接口是一种不包含重复元素的collection，HashSet中的数据也是没得顺序的
+
+```java
+Set hs = new HashSet<String>();
+hs.add("test")
+```
+
+##### Scala-Set
+
+默认情况下。scala使用的是不可变集合，如想使用可变集合需要引入`scala.collection.mutable.Set`包
+
+###### 不可变Set
+
+```scala
+object SetDemo {
+  def main(args: Array[String]): Unit = {
+    // 不可变Set不用引入，scala包对象中默认引入
+    val setDemo = Set("A", "B", "C", "D", "D")
+    // 集合内不可重复
+    println(setDemo) //Set(A, B, C, D)
+  }
+}
+```
+
+###### 可变Set
+
+```scala
+object SetDemo {
+  def main(args: Array[String]): Unit = {
+    // 可变集合需要引包
+    import scala.collection.mutable
+    // 实例化
+    val setDemo = mutable.Set("A", "B", "C")
+    // 增 存在则不添加
+    setDemo += "D"
+    setDemo.add("E")
+    println(setDemo) // Set(B, C, D, E, A) 
+    // 删 存在则删除，不存在不报错
+    setDemo -= "A"
+    setDemo.remove("B")
+    println(setDemo) // Set(C, D, E)
+    // 遍历
+    for(i <- setDemo) print(" - " + i) // - C - D - E
+    val setDemo2 = mutable.Set("G", "A", "D", "P")
+    // 交 并 差集
+    println("交-" + (setDemo.intersect(setDemo2))) // 交-Set(D)
+    println("并-" + (setDemo.union(setDemo2))) // 并-Set(C, G, D, E, A, P)
+    println("差-" + (setDemo.diff(setDemo2))) // 差-Set(C, E)
+  }
+}
+```
+
+---
+
+## 集合操作
 
