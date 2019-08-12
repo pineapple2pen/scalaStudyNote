@@ -79,3 +79,53 @@ var y2 = -10 % 3			// -1 (-10) - (-3) * 3 = -10 + 9 = -1
 `&=`|位与后赋值|C `*=` A (C = C `&` A)
 `^=`|位异后赋值|C `/=` A (C = C`^` A)
 `|=`|位或后赋值|C `|=` A (C = C `|` A)
+
+---
+
+#### 操作符
+
+##### 扩展
+
+1. 如果想在变量名、类名等定义中使用语法关键字（保留字），可以配合反引号
+
+   ```scala
+   val `val` = 42
+   ```
+
+2. 中置操作符：`A 操作符 B` 等同于 `A.操作符(B)`
+
+   ```scala
+   val n1 = 1
+   val n2 = 2
+   val n3 = n1 + n2
+   var n4 = n1.+(n2)
+   ```
+
+3. 后置操作符：`A 操作符` 等同于`A.操作符`，如果操作符定义的时候不带()则调用时不能加()
+
+   ```scala
+     def main(args: Array[String]): Unit = {
+       val ope = new Ope
+       println(ope.++) // 123
+       println(ope++)  // 123
+     }
+     class Ope{
+       def ++ = "123"
+     }
+   ```
+
+4. 前置操作符， `+ - ! ~`等操作符`A`等同于`A.unary_操作符`
+
+   ```scala
+     def main(args: Array[String]): Unit = {
+       val ope = new Ope
+       ope.isOpe =false
+       println(!ope) //true
+     }
+     class Ope {
+       var isOpe = true
+       def unary_!(): Boolean = !isOpe
+     }
+   ```
+
+5. 赋值操作符，`A 操作符= B`等同于`A = A 操作符 B`(`A += B ` => `A = A + B`)

@@ -472,3 +472,355 @@ object SetDemo {
 
 ## 集合操作
 
+### 引子
+
+​    看问题，定义一个函数将一个Int类型的列表的所有元素乘2后返回。
+
+常规实现：
+
+```scala
+  def map(list: List[Int]): List[Int] = {
+    if (list.isEmpty) {
+      return list
+    }
+    var l: List[Int] = Nil
+    for (i <- list) {
+      l = l :+ i * 2
+    }
+    l
+  }
+```
+
+对上面常规方式解决问题的优点：处理方式直接，易理解，缺点：不够简洁，同时若后续功能延伸，重构代价较大
+
+### 集合高阶函数应用
+
+#### map映射操作
+
+​     在引子中的问题，实际上是一个关于集合映射操作的问题。
+
+​    在Scala中可以通过map映射操作来解决：将集合中的每一个元素通过指定功能的（函数）映射（转换）成为新的结果集合，这里其实就是所谓的将函数作为参数传递给另一个函数，这就是函数式编程的特点。
+
+​    以HashSet为例：
+
+```scala
+def map[B](f:(A)=>B):HashSet[B]
+```
+
+1. 这个就是map映射函数集合类型都有
+2. [B]是泛型
+3. map是一个高阶函数，可以接收函数`f:(A)=>B`
+4. `HashSet[B]`就是返回新的集合
+
+##### 高阶函数使用案例
+
+```scala
+object HighFuncDemo {
+  def main(args: Array[String]): Unit = {
+    // 把一个函数赋值給一个变量，但是不执行
+    val f = multi2 _
+    println(test(f, 15.0))
+  }
+
+  /**
+   * test高阶函数
+   * @param f 这是一个函数，表示接受一个Double,返回一个Double
+   * @param d 普通参数
+   * @return 返回执行f函数传入普通参数d的结果
+   */
+  def test(f: Double => Double, d: Double) = {
+    f(d)
+  }
+
+  /**
+   * 普通函数， 接受一个Double,返回一个Double
+   * @param d 参数
+   * @return
+   */
+  def multi2(d: Double): Double = {
+    d * 2
+  }
+}
+
+```
+
+同样，也可以使用list高阶函数处理引子中的问题。
+
+```scala
+  def main(args: Array[String]): Unit = {
+    val list = List(1, 2, 5, 6, 9)
+    def multi2(i: Int): Int = i * 2
+    // map方法会将list中的元素依次遍历，传入指定的方法
+    // 然后将方法得到的值放入到一个新的集合并返回
+    val list2 = list.map(multi2)
+    println(list2)
+  }
+```
+
+#### flatmap映射（扁平化映射）
+
+flat就是压扁，压平，扁平化。效果就是将集合中的每个元素的子元素映射到某个函数并返回新的集合
+
+```scala
+    // 将list中的字符串的所有字母依照顺序转换为大写填入一个新集合并返回
+    val list = List("a", "bb", "ccc")
+	// String 的子元素是 Char
+    println(list.flatMap(x => x.toUpperCase)) //List(A, B, B, C, C, C)
+```
+
+#### filter过滤
+
+将符合要求的数据（筛选）放置到新的集合中
+
+```scala
+    // 将List("a", "bb", "ccc", "adc")中a开头的元素取出
+    val list4 = List("a", "bb", "ccc", "adc")
+    println(list4.filter(x => x.startsWith("a"))) //List(a, adc)
+```
+
+#### 化简
+
+需求：`val list = List(1, 20, 30, 4, 5)`,求list和
+
+```scala
+  def main(args: Array[String]): Unit = {
+    def add(m: Int, n: Int): Int = m + n
+    val list = List(10, 20, 30, 40, 50, 60, 70, 80, 90)
+    // reduceLeft 依照顺序将列表前两个参数传入二元函数，将得到的结果与第三个参数传入函数然后...
+    println(list.reduceLeft(add)) //450
+  }
+```
+
+代码说明：
+
+​    在代码`def reduceLeft[B >: A](@deprecatedName('f) op: (B, A) => B): B`中，`reduceLeft(f)`接收的函数需要的形式为 `op: (B, A) => B`,其运行规则是从左边开始执行将得到的结果
+
+化简：将二元函数引用于集合中的函数
+
+##### 化简练习
+
+1. 写出由左到右 由右到左的列表减法运算过程
+
+```scala
+  def main(args: Array[String]): Unit = {
+    def sub(m: Int, n: Int): Int = m - n
+    val list = List(1, 2, 3, 4, 5)
+    // 1 - 2 - 3 - 4 - 5 = -13
+    println(list.reduceLeft(sub)) // -13
+    // 1 - ( 2 - ( 3 - ( 4 - 5 )))
+    println(list.reduceRight(sub)) // 3
+  }
+```
+
+2. 用化简的方法求出列表最小值
+
+```scala
+  def main(args: Array[String]): Unit = {
+    def min(m: Int, n: Int): Int = if (m > n) n else m
+    val list = List(1, 2, 3, 4, 5)
+    println(list.reduce(min))
+  }
+```
+
+#### 折叠
+
+​    fold函数将上一步返回的值作为函数第第一个参数继续传递参与运算，知道list中所有元素被遍历,可以吧**reduceLeft**看做简化版的**foldLeft**
+
+```scala
+// 求最大值
+  def main(args: Array[String]): Unit = {
+    def max(m: Int, n: Int): Int = if (m < n) n else m
+    val list = List(1, 2, 3, 4, 5)
+    // 折叠与化简的理解几乎一模一样，reduceLeft底层就是调用的折叠方法
+    // 下面的案例实际是 reduceLeft(List(0, 1, 2, 3, 4, 5))
+    // 相当于第一个参数是我们自己指定，第二个参数为列表第一个 依次遍历...
+    println(list.fold(0)(max)) // 函数的柯里化f()()
+  }
+```
+
+##### 折叠的缩写
+
+```scala
+  def main(args: Array[String]): Unit = {
+    def max(m: Int, n: Int): Int = if (m < n) n else m
+    val list = List(1, 2, 3, 4, 5)
+    println((0 /: list)(max)) // 5  ==> foldLeft(0)(max)
+    println((list :\ 6)(max)) // 6  ==> foldRight(6)(max)
+  }
+```
+
+#### 扫描
+
+扫描，就是对某个集合中所有的元素做fold操作，但是会把产生的所有中间结果放置在一个新集合中保存
+
+```scala
+  def main(args: Array[String]): Unit = {
+    def max(m: Int, n: Int): Int = if (m < n) n else m
+    val list = List(2, 3, 4, 5)
+    println(list.scan(1)(max))  // List(1, 2, 3, 4, 5)
+    // scan => 1
+    // max(1, 2) -> 2 =>
+    // max(2, 3) -> 3 =>
+    // max(3, 4) -> 4 =>
+    // max(4, 5) -> 5 =>
+      
+    // left and right
+    println((1 to 5).scanLeft(-3)(add)) // Vector(-3, -2, 0, 3, 7, 12)
+    println((1 to 5).scanRight(-3)(add)) // Vector(12, 11, 9, 6, 2, -3) 
+  }
+```
+
+#### 拉链
+
+对偶元组的合并，使用拉链（zip）
+
+案例：将两个集合合并
+
+```scala
+val list1 = List(1,2,3)
+val list2 = List(4,5,6)
+val list3 = liat1.zip(list2) // (1,4),(2,5)(3,6)
+```
+
+1. 拉链的本质就是两个集合的合并操作，合并后的每个元素是一个对偶元组（Tuple2对象）
+2. 如果两个集合个数不对应，会造成数据丢失
+3. zip方法不仅限于List,其他有序集合也可使用
+
+#### 迭代器
+
+通过iterator方法从集合获得一个迭代器，通过while循环或者for循环对集合进行遍历
+
+```scala
+  def iterator(): Unit = {
+    val l = List(1, 23, 4, 5, 66, 7, 89)
+    val i = l.iterator
+    while (i.hasNext){
+      println(i.next())
+    }
+  }
+```
+
+​    iterator的构建实际上是AbstractIterator的一个匿名子类，该子类提供了迭代器的方法，因此我们能使用循环的方式，使用hasNext和next方法。
+
+```scala
+  // iterator的构建方式
+  override /*IterableLike*/
+  def iterator: Iterator[A] = new AbstractIterator[A] {
+    var these = self
+    def hasNext: Boolean = !these.isEmpty
+    def next(): A =
+      if (hasNext) {
+        val result = these.head; these = these.tail; result
+      } else Iterator.empty.next()
+```
+
+#### 流
+
+stream是一个集合。这个集合，可以用于存放于无穷多个元素，但是这无穷多个元素并不会一次性生产出来，而是需要用到多大区间就会动态的产生，末尾元素遵循lazy规则（使用时计算末尾值）
+
+```scala
+  def stream(): Unit = {
+    // stream存放的是BigInt类型
+    def numsForm(n: BigInt): Stream[BigInt] = n #:: numsForm(n * 2)
+    val streamNum = numsForm(2)
+    println(streamNum.head) // 2
+    println(streamNum.tail) // Stream(4, ?)
+    println(streamNum(8))   // 512
+    println(streamNum)      // Stream(2, 4, 8, 16, 32, 64, 128, 256, 512, ?)
+  }
+```
+
+#### 视图
+
+Stream的懒加载特性，也可以对其他集合应用view方法来得到类似的效果。其具有如下特点：
+
+1. view方法会产出一个总是被执行的集合
+2. view不会缓存数据，每次都要重新计算，比如遍历View的时候
+
+```scala
+// 应用案例：找到1-100中数字倒序和它本身相同的所有数字
+  def view():Unit={
+    def eqNumRev(n:Int):Boolean=n.toString.equals(n.toString.reverse)
+    val nums = 1 to 100
+    // 不使用view
+    println(nums.filter(eqNumRev)) //Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22, 33, 44, 55, 66, 77, 88, 99)
+    // 使用view
+    val v = nums.view.filter(eqNumRev)
+    println(v)//SeqViewF(...)
+    println(v(2)) // 3 使用下标获取值，或者for遍历
+    println(v)//SeqViewF(...) 每次使用都会重新加载
+  }
+```
+
+---
+
+### 集合的线程安全
+
+#### 基本介绍
+
+基本所有的线程安全的集合都是以synchronized开头（`synchronizedBuffer`、`synchronizedMap`...）
+
+1. Scala为了充分使用多核CPU,提供了并行集合（有别于前面的串行集合），用于多核环境的并行计算。
+2. 只要用到的算法：
+   - Divide and conquer ：分治算法，Scala通过splitters（分解器），compliners（组合器）等抽象层来实现，主要原理是将计算工作分解为很多的任务，分发给一些处理器去完成，并将他们处理结果合并返回
+   - Work stralin算法：只要用于任务调度的负载均衡（load-balancing），通俗一点说就是完成自己的任务之后，发现其他人还有活没有干完，主动的（或被安排）帮他人一起干，尽早达到干完活的目的
+
+```scala
+  def syn():Unit={
+    (1 to 5).foreach(print(_)) // 12345
+    println()
+    (1 to 5).par.foreach(print(_)) // 45123 将任务分给不同的CPU，所以打印无序
+  }
+```
+
+```scala
+  def threadSet():Unit={
+    // Vector(main)
+    // 只有一个主线程
+    val res1 = (1 to 50).map{case _ => Thread.currentThread().getName}.distinct
+    // ParVector(scala-execution-context-global-9, scala-execution-context-global-11, scala-execution-context-global-10, scala-execution-context-global-12)
+    // 4个线程(本次测试主机为英特尔i5-7500 4核心)
+    val res2 = (1 to 50).par.map{case _ => Thread.currentThread().getName}.distinct
+    println(res1) // 非并行
+    println(res2) // 并行计算
+  }
+```
+
+---
+
+### 综合应用案例
+
+1. 字符串`AAAAAAAABBBBBBCCCCCCCCCDDDDD`通过foldLeft存放到一个ArrayBuffer中
+
+```scala
+import scala.collection.mutable.ArrayBuffer
+object ExecDemo {
+  def main(args: Array[String]): Unit = {
+    val str = "AAAAAAAABBBBBBCCCCCCCCCDDDDD"
+    val arrBuff = new ArrayBuffer[Char]()
+    def addChar(arr: ArrayBuffer[Char], s: Char): ArrayBuffer[Char] = {
+      arr.append(s);
+      arr
+    }
+    println(str.foldLeft(arrBuff)(addChar))
+  }
+}
+```
+
+2. 统计题目1中各字母出现次数，生成一个map
+
+```scala
+import scala.collection.mutable.Map
+object ExecDemo {
+  def main(args: Array[String]): Unit = {
+    val str = "AAAAAAAABBBBBBCCCCCCCCCDDDDD"
+    val map = Map[Char, Int]()
+    def statChar(c: Char): Unit = map(c) = map.getOrElse(c, 0) + 1
+    str.map(statChar)
+    println(map)
+  }
+}
+```
+
+3. `val list = List("I love you", "In me the tiger sniff the rose", "I need you , like rose need rain")`, 使用映射集合，求出list中各个单词出现的次数，并按照出现顺序排序
+
