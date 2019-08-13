@@ -269,10 +269,117 @@ match中每一个case都可以单独的提取出来，意思是一样的(快速�
 ## 样例类
 
 ```scala
+// 下面的类就是样例类
+// 抽象类编译后只有一个class文件
 abstract class Amount
+// case装饰的类是样例类，编译后有两个class文件
+// 底层的编译文件生产了很多自带的默认方法
+// 样例类的实例化参数都是val的
 case class Dollar(v:Double) extends Amount
 case class Currency(v:Double, s:String) extends Amount
-case class NotAmount() extends Amount
+case object NotAmount extends Amount
 ```
 
 上面的Dollar、Currency、NotAmount就是样例类（模板类）
+
+#### 说明
+
+1. 样例类任然是类
+2. 样例类使用case关键字进行声明
+3. 样例类是为了模式匹配而优化的类
+4. 构造器中的每一个参数为val (除非显示的声明为var[不推荐])
+5. 在样例类对应的伴生对象中提供了apply和unapply方法
+6. 自动生成了toString、equals、hashCode和copy方法
+7. 上面是case类的特性，另外还可以完全像普通类一样去添加字段或者扩展
+
+#### case的中置表达式
+
+如果unapply方法产出一个元组，则可以在case语句中使用中置表达法。比如可以匹配一个List序列
+
+```scala
+  def middleCase(): Unit = {
+    val l = List(1, 2, 3, 4)
+    l match {
+      // 至少两个元素才会被匹配
+      case f :: s :: rest => println("f=" + f + " s=" + s + " rest len =" + rest.length) // f=1 s=2 rest len =2
+      case _ => println("no match")
+    }
+  }
+```
+
+#### 样例类示例
+
+现在有一些商品，设计样例类，完成对商品的捆绑打折销售。
+
+1. 商品捆绑可以是单个商品，也可以是多个商品
+2. 打折的时候按照折扣x元进行设计
+3. 能够统计出所有捆绑商品打折后的最终价格
+
+```scala
+package com.dongbo.collectionpkg
+
+object caseClassDemo {
+  def main(args: Array[String]): Unit = {
+    val book1 = Book("名侦探柯南", 19.99)
+    val book2 = Book("追风筝的人", 32.99)
+    val pen1 = Pen("2B铅笔", 1.2)
+    val pen2 = Pen("签字笔", 2.3)
+    val bundle1 = Bundle("文具包", 1.0, pen1, pen2)
+    val bundle = Bundle("折扣学习包", 6.0, book1, book2, bundle1)
+    println(getMoney(bundle))
+    println(bundle.calMoney())
+    println(bundle1.calMoney())
+  }
+
+  def getMoney(i: Item): Double = {
+    i match {
+      case Book(_, m) => m
+      case Pen(_, m) => m
+      case Bundle(_, discount, r@_*) => r.map(getMoney).sum - discount
+      case _ => 0.0
+    }
+  }
+}
+
+// 抽象类
+abstract class Item
+
+// 商品
+case class Book(desc: String, price: Double) extends Item
+
+// 商品
+case class Pen(desc: String, price: Double) extends Item
+
+// 商品包
+case class Bundle(desc: String, discount: Double, item: Item*) extends Item {
+  def calMoney(): Double = {
+    var money: Double = 0.0
+    for (i <- item) {
+      i match {
+        case Book(_, m) => money += m
+        case Pen(_, m) => money += m
+        case Bundle(_, _, _*) =>
+          val b = i.asInstanceOf[Bundle]
+          money += b.calMoney()
+        case _ => println("未知匹配 + " + i)
+      }
+    }
+    // Double小数计算会出现精度丢失，所保留两位小数后返回
+    "%.2f".format(money - discount).toDouble
+  }
+}
+```
+
+另外还可通过@表示法将嵌套的值绑定到变量
+
+上面的例子中，在match里面
+
+```scala
+case Bundle(_, book @ Book(_,_), rest @ _*) => ...
+```
+
+表示将Bundle中的一个book赋值给book变量，剩下的赋值给rest（WrappedArray对象）变量
+
+#### 密封类
+
+如果想让case类的所有子类都必须在申明该类的相同的源文件中定义，可以将样例类的通用超类声明为sealed，这个超类称之为密封类（密封就是不能在其他文件中定义子类）
