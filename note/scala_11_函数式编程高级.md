@@ -254,9 +254,134 @@ object ListDemo1 {
 - 全部转大写（或小写）
 - 比较是否相等
 
+普通：
+
 ```scala
     def eqStr(s1: String)(s2: String) = s1.toUpperCase.equals(s2.toUpperCase)
 
     println(eqStr("aBc")("Abc")) // true
+```
+
+高级（隐式类）：
+
+```scala
+  def main(args: Array[String]): Unit = {
+    val m = "aBBC"
+    val n = "AbBc"
+    // m -> s
+    // n -> s1
+    // eq -> f
+    println(m.checkEq(n)(eq)) // true
+    println(m.checkEq(n)(_.equals(_))) // true (传入函数简写)
+  }
+  // 比较方法
+  def eq(s1:String, s2:String):Boolean={
+    s1.equals(s2)
+  }
+  // 隐式类，扩展了字符串的方法，让字符串可以调用类中的checkEq方法
+  implicit class TestEq(s: String) {
+    // 函数柯里化，完成字符串转化大小写的任务
+    def checkEq(s1: String)(f: (String, String) => Boolean) = {
+      f(s1.toLowerCase, s.toLowerCase())
+    }
+  }
+```
+
+### 控制抽象
+
+#### 引子
+
+如何实现将一段代码，作为参数传递给高阶函数，在高阶函数内部执行这一段代码。（类似breakable）
+
+```scala
+    breakable {
+      while (true) {
+        ii += 1
+        if (ii > 10) {
+          break()
+        }
+        print(ii + "\t")
+      }
+    }
+```
+
+#### 介绍
+
+抽象控制是这样的函数，满足如下条件：
+
+1. 参数是函数
+2. 无传入参数，也不要求返回值
+
+```scala
+  def main(args: Array[String]): Unit = {
+    // f是一个没有输入，也不要去输出的函数
+    def myThread(f: () => Unit): Unit = {
+      new Thread {
+        override def run(): Unit = {
+          f()
+        }
+      }.start()
+    }
+
+    // f是一个执行代码块
+    def myThread2(f: => Unit): Unit = {
+      new Thread {
+        override def run(): Unit = {
+          f
+        }
+      }.start()
+    }
+
+    myThread {
+      () => {
+        println("start ..." + Thread.currentThread().getName)
+        Thread.sleep(5000)
+        println("end ..." + Thread.currentThread().getName)
+      }
+    }
+    myThread2 {
+      println("start ..." + Thread.currentThread().getName)
+      Thread.sleep(5000)
+      println("end ..." + Thread.currentThread().getName)
+    }
+
+    println("main thread " + Thread.currentThread().getName)
+  }
+
+  //start ...Thread-0
+  //main thread main
+  //start ...Thread-1
+  //end ...Thread-0
+  //end ...Thread-1
+```
+
+#### 案例
+
+实现一个类似while的until方法
+
+```scala
+  def main(args: Array[String]): Unit = {
+    var i = 10
+    while (i > 0) {
+      i -= 1
+      print(i)
+    }
+    println("\n-----------使用抽象控制思想while循环----------")
+    until(i < 10){
+      i += 1
+      print(i)
+    }
+  }
+  def until(con: => Boolean)(block: => Unit) :Unit={
+     // con 代码块返回值为真执行block,并且迭代执行下一次
+    if(con){
+      block
+      until(con)(block)
+    }
+  }
+
+  //9876543210
+  //-----------使用抽象控制思想while循环----------
+  //12345678910
 ```
 
